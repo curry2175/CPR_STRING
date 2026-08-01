@@ -1,0 +1,15 @@
+{
+  "id": "compound_reasoning_step",
+  "premises": [
+    {"id": "p1", "text": "Bob is quiet."},
+    {"id": "p2", "text": "Quiet people are kind."}
+  ],
+  "question": "Is Bob kind?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is quiet. Therefore, Bob is kind."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes"
+}

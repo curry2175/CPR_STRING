@@ -1,0 +1,25 @@
+{
+  "id": "semantic_implies",
+  "premises": [
+    {"id": "p1", "text": "Alice is a mother."}
+  ],
+  "question": "Is Alice a parent?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Alice is a parent."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes",
+  "semantic_relations": [
+    {
+      "id": "m1",
+      "type": "implies",
+      "source": "mother",
+      "target": "parent",
+      "arity": 1,
+      "approved": true,
+      "description": "A mother is a parent."
+    }
+  ]
+}

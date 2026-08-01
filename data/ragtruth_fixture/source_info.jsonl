@@ -1,0 +1,2 @@
+{"source_id":"s1","task_type":"QA","source":"fixture","source_info":{"question":"What is the capital of France?","passages":"passage 1: France's capital is Paris.\n\npassage 2: Lyon is a city in France."},"prompt":"Answer from passages."}
+{"source_id":"s2","task_type":"Summary","source":"fixture","source_info":"The trial enrolled 100 adults. Mortality did not differ significantly between groups.","prompt":"Summarize the source."}

@@ -1,0 +1,18 @@
+{
+  "id": "declared_insufficient_support",
+  "premises": [
+    {"id": "p1", "text": "Bob is quiet."},
+    {"id": "p2", "text": "Quiet people are kind."},
+    {"id": "p3", "text": "Bob is smart."}
+  ],
+  "question": "Is Bob kind?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is quiet.", "depends_on": ["p1"]},
+      {"id": "s2", "text": "Bob is kind.", "depends_on": ["p3"]}
+    ],
+    "answer": "Yes",
+    "answer_depends_on": ["s2"]
+  },
+  "gold_answer": "Yes"
+}

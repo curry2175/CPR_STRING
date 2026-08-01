@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Batch Evaluation · Verified Reasoning Graph v015</title>
+  <style>
+    :root {
+      --bg: #f4f7fb; --panel: #ffffff; --border: #d9e2ec; --text: #172b4d;
+      --muted: #6b7c93; --accent: #2563eb; --good: #16803c; --warn: #a15c00;
+      --bad: #b42318; --soft: #eef4ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
+    .app { max-width: 1480px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    h1 { font-size: 22px; margin: 0; }
+    h2 { font-size: 16px; margin: 0 0 10px; }
+    p { margin: 6px 0 0; color: var(--muted); }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 9px; padding: 9px 12px; cursor: pointer; text-decoration: none; font: inherit; }
+    .btn:hover { border-color: #9fb3c8; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 15px; }
+    .layout { display: grid; grid-template-columns: minmax(380px, 0.9fr) minmax(620px, 1.5fr); gap: 14px; }
+    textarea { width: 100%; min-height: 390px; resize: vertical; border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+    input[type=file] { max-width: 100%; }
+    .option-row { display: flex; flex-wrap: wrap; gap: 18px; margin: 12px 0; }
+    .option-row label { display: inline-flex; gap: 7px; align-items: center; color: var(--muted); }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--border); border-radius: 12px; padding: 11px; background: var(--panel); }
+    .metric small { display: block; color: var(--muted); margin-bottom: 5px; }
+    .metric strong { font-size: 20px; }
+    .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+    .note { background: var(--soft); border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 13px; margin-top: 10px; }
+    .status { white-space: pre-wrap; color: var(--bad); margin-top: 9px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    th, td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; position: sticky; top: 0; z-index: 1; }
+    tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; border: 1px solid currentColor; border-radius: 999px; padding: 2px 7px; }
+    .section { margin-top: 14px; }
+    pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; background: #f8fafc; border-radius: 10px; padding: 11px; font-size: 12px; }
+    .hidden { display: none; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .app { padding: 12px; } .topbar { flex-direction: column; } .metrics { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1>Batch Evaluation · MVP v015</h1>
+      <p>여러 Yes/No 사례를 JSONL로 한꺼번에 검증하고 정확도, reasoning 오류, 실행 시간을 요약합니다.</p>
+    </div>
+    <div class="controls">
+      <a class="btn" href="/">단일 Graph</a> <a class="btn" href="/preflight">입력 사전점검</a> <a class="btn" href="/mutation">오류 주입 시험</a>
+      <button class="btn" id="loadBuiltIn">내장 9개 샘플 불러오기</button>
+      <button class="btn primary" id="runBatch">배치 평가 실행</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>1. JSONL 입력</h2>
+      <p>한 줄에 하나의 Case JSON을 넣습니다. 빈 줄과 # 주석은 무시합니다.</p>
+      <div class="controls" style="margin:12px 0 8px">
+        <input id="fileInput" type="file" accept=".jsonl,.ndjson,.txt,application/x-ndjson,text/plain" />
+        <button class="btn" id="clearInput">입력 비우기</button>
+      </div>
+      <textarea id="jsonlInput" aria-label="Batch JSONL input" spellcheck="false"></textarea>
+      <div class="option-row">
+        <label><input id="preferZ3" type="checkbox" checked /> Z3 우선 사용</label>
+        <label><input id="counterfactuals" type="checkbox" /> 삭제 영향도까지 계산 · 느림</label>
+      </div>
+      <div class="note">
+        빠른 배치 검증에서는 삭제 영향도를 끄는 것이 좋아요. 각 Case의 P/C 판정, 오류 유형, Semantic 상태는 그대로 계산됩니다.
+      </div>
+      <div id="error" class="status"></div>
+    </section>
+
+    <section>
+      <div class="metrics">
+        <div class="metric"><small>완료 / 전체</small><strong id="mCompleted">-</strong></div>
+        <div class="metric"><small>정답 정확도</small><strong id="mAccuracy">-</strong></div>
+        <div class="metric"><small>Final Proof valid</small><strong id="mProof">-</strong></div>
+        <div class="metric"><small>Final Chain valid</small><strong id="mChain">-</strong></div>
+        <div class="metric"><small>Reasoning 오류 Case</small><strong id="mErrors">-</strong></div>
+        <div class="metric"><small>정답은 맞지만 풀이 오류</small><strong id="mRightBad">-</strong></div>
+        <div class="metric"><small>평균 실행 시간</small><strong id="mRuntime">-</strong></div>
+        <div class="metric"><small>사용 엔진</small><strong id="mEngine">-</strong></div>
+      </div>
+
+      <section class="panel">
+        <div class="controls" style="justify-content:space-between">
+          <h2>2. Case별 결과</h2>
+          <div class="controls">
+            <a class="btn hidden" id="downloadSummary" href="/api/batch-summary">요약 JSON 저장</a>
+            <a class="btn hidden" id="downloadCases" href="/api/batch-cases-csv">Case CSV 저장</a>
+            <a class="btn hidden" id="downloadFull" href="/api/batch-latest">전체 결과 JSON 저장</a>
+          </div>
+        </div>
+        <div class="table-wrap section">
+          <table>
+            <thead>
+              <tr>
+                <th>Case</th><th>정답</th><th>Answer</th><th>Final P</th><th>Final C</th>
+                <th>Reasoning 오류</th><th>정답 맞음·풀이 오류</th><th>Semantic</th><th>시간 ms</th>
+              </tr>
+            </thead>
+            <tbody id="caseRows"><tr><td colspan="9" style="color:var(--muted)">아직 실행하지 않았습니다.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <h2>3. 분포 요약</h2>
+        <pre id="distribution">-</pre>
+      </section>
+    </section>
+  </div>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmtPct = (value) => value == null ? '-' : `${value}%`;
+  const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const statusClass = (status) => status === 'valid' ? 'good' : (status === 'blocked_by_upstream_error' || status === 'ungrounded' ? 'warn' : 'bad');
+
+  async function loadBuiltIn() {
+    $('error').textContent = '';
+    const response = await fetch('/api/batch-sample');
+    if (!response.ok) throw new Error(await response.text());
+    $('jsonlInput').value = await response.text();
+  }
+
+  function render(result) {
+    const s = result.summary;
+    $('mCompleted').textContent = `${s.completed_cases} / ${s.total_cases}`;
+    $('mAccuracy').textContent = fmtPct(s.answer_accuracy_percent);
+    $('mProof').textContent = fmtPct(s.final_proof_valid_percent);
+    $('mChain').textContent = fmtPct(s.final_chain_valid_percent);
+    $('mErrors').textContent = `${s.cases_with_reasoning_error_count} (${fmtPct(s.cases_with_reasoning_error_percent)})`;
+    $('mRightBad').textContent = `${s.valid_answer_but_invalid_reasoning_count} (${fmtPct(s.valid_answer_but_invalid_reasoning_percent)})`;
+    $('mRuntime').textContent = s.average_runtime_ms == null ? '-' : `${s.average_runtime_ms} ms`;
+    $('mEngine').textContent = Object.entries(s.engine_distribution).map(([k,v]) => `${k}:${v}`).join(', ') || '-';
+
+    const tbody = $('caseRows');
+    tbody.innerHTML = result.cases.length ? result.cases.map(row => {
+      const reasoningErrors = Number(row.invalid_reasoning_count || 0) + Number(row.chain_error_count || 0);
+      const semantic = Number(row.proof_usable_semantic_relations || 0) + Number(row.advisory_semantic_relations || 0);
+      return `<tr>
+        <td>${esc(row.case_id)}</td>
+        <td class="${row.answer_correct ? 'good' : 'bad'}">${row.answer_correct ? '맞음' : '틀림'}</td>
+        <td>${esc(row.predicted_answer)} / ${esc(row.gold_answer)}</td>
+        <td><span class="pill ${statusClass(row.final_proof_status)}">${esc(row.final_proof_status)}</span></td>
+        <td><span class="pill ${statusClass(row.final_chain_status)}">${esc(row.final_chain_status)}</span></td>
+        <td>${reasoningErrors}</td>
+        <td class="${row.valid_answer_but_invalid_reasoning ? 'warn' : ''}">${row.valid_answer_but_invalid_reasoning ? 'Yes' : 'No'}</td>
+        <td>${semantic}</td>
+        <td>${row.runtime_ms}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="9">완료된 Case가 없습니다.</td></tr>';
+
+    $('distribution').textContent = JSON.stringify({
+      final_proof_status: s.final_proof_status_distribution,
+      final_chain_status: s.final_chain_status_distribution,
+      root_error_types: s.root_error_type_distribution,
+      runtime_ms: {average: s.average_runtime_ms, median: s.median_runtime_ms, p95: s.p95_runtime_ms, total: s.total_runtime_ms},
+      nodes: {total: s.total_nodes, average_per_case: s.average_nodes_per_case, average_reasoning_per_case: s.average_reasoning_nodes_per_case},
+      failed_cases: s.failed_cases,
+    }, null, 2);
+
+    for (const id of ['downloadSummary','downloadCases','downloadFull']) $(id).classList.remove('hidden');
+  }
+
+  async function runBatch() {
+    $('error').textContent = '';
+    const button = $('runBatch');
+    button.disabled = true;
+    button.textContent = '평가 중...';
+    try {
+      const response = await fetch('/api/batch-verify', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          jsonl: $('jsonlInput').value,
+          prefer_z3: $('preferZ3').checked,
+          compute_counterfactuals: $('counterfactuals').checked,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || JSON.stringify(payload));
+      render(payload);
+    } catch (error) {
+      $('error').textContent = String(error.message || error);
+    } finally {
+      button.disabled = false;
+      button.textContent = '배치 평가 실행';
+    }
+  }
+
+  $('loadBuiltIn').addEventListener('click', () => loadBuiltIn().catch(e => $('error').textContent = String(e.message || e)));
+  $('runBatch').addEventListener('click', runBatch);
+  $('clearInput').addEventListener('click', () => { $('jsonlInput').value = ''; $('error').textContent = ''; });
+  $('fileInput').addEventListener('change', async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (file) $('jsonlInput').value = await file.text();
+  });
+  loadBuiltIn().catch(e => $('error').textContent = String(e.message || e));
+</script>
+</body>
+</html>

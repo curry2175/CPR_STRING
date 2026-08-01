@@ -1,0 +1,9 @@
+CPR_STRING unified release verification
+Date: 2026-08-02 (Asia/Seoul)
+Core + integration tests: python -m pytest -q
+Result: 192 passed, 3 skipped
+Additional checks:
+- Python compileall: passed
+- Chrome extension JavaScript syntax (node --check): passed
+- Manifest V3 parse and asset validation: passed
+- Single root vrg package assertion: passed

@@ -1,0 +1,34 @@
+{
+  "id": "long_chain_incremental",
+  "premises": [
+    {"id": "p1", "text": "Bob is calm."},
+    {"id": "p2", "text": "Calm people are focused."},
+    {"id": "p3", "text": "Focused people are careful."},
+    {"id": "p4", "text": "Careful people are reliable."},
+    {"id": "p5", "text": "Reliable people are trusted."},
+    {"id": "p6", "text": "Trusted people are respected."},
+    {"id": "p7", "text": "Respected people are admired."},
+    {"id": "p8", "text": "Admired people are confident."},
+    {"id": "p9", "text": "Confident people are prepared."},
+    {"id": "p10", "text": "Prepared people are ready."},
+    {"id": "p11", "text": "Ready people are successful."}
+  ],
+  "question": "Is Bob successful?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is calm."},
+      {"id": "s2", "text": "Bob is focused."},
+      {"id": "s3", "text": "Bob is careful."},
+      {"id": "s4", "text": "Bob is reliable."},
+      {"id": "s5", "text": "Bob is trusted."},
+      {"id": "s6", "text": "Bob is respected."},
+      {"id": "s7", "text": "Bob is admired."},
+      {"id": "s8", "text": "Bob is confident."},
+      {"id": "s9", "text": "Bob is prepared."},
+      {"id": "s10", "text": "Bob is ready."},
+      {"id": "s11", "text": "Bob is successful."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes"
+}

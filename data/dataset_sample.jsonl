@@ -1,0 +1,5 @@
+{"id":"native_raw_1","premises":["Bob is quiet.","Quiet people are kind."],"question":"Is Bob kind?","gold_answer":"Yes","llm_response":"1. Bob is quiet.\n2. Bob is kind.\nAnswer: Yes"}
+{"id":"proofwriter_like_1","triples":{"triple1":{"text":"The mouse eats the apple."}},"rules":{"rule1":{"text":"If something eats the apple, then it visits the rabbit."}},"query":"Does the mouse visit the rabbit?","label":true,"response":"Step 1: The mouse eats the apple.\nStep 2: The mouse visits the rabbit.\nFinal: Yes"}
+{"id":"theory_text_no","theory":"Alice is not tall. Tall people are visible.","question":"Is Alice tall?","answer":false,"model_output":"1. Alice is not tall.\nThe answer is No."}
+{"id":"context_text_semantic","context":"Alice is a mother.","question":"Is Alice a parent?","gold":"Yes","predicted_answer":"Yes","reasoning_steps":["Alice is a parent."],"semantic_relations":[{"id":"m1","type":"implies","source":"mother","target":"parent","arity":1,"approved":true}]}
+{"id":"unsupported_unknown_label","theory":"Charlie is blue.","question":"Is Charlie blue?","label":"Unknown","response":"Charlie is blue. Answer: Yes"}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProofWriter 자동 다운로드 · Pilot → Full Runner</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--line:#d8dfeb;--text:#172033;--muted:#64748b;--blue:#1d4ed8;--green:#15803d;--red:#b91c1c;--amber:#b45309}
+*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;margin:0;background:var(--bg);color:var(--text)}.top{background:#111827;color:#fff;padding:17px 24px}.top a{color:#bfdbfe}.top .right{float:right}.wrap{max-width:1500px;margin:auto;padding:18px}.layout{display:grid;grid-template-columns:430px 1fr;gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:0 2px 8px rgba(15,23,42,.035)}label{display:block;font-size:13px;font-weight:750;margin:9px 0 4px}input,select,textarea{width:100%;padding:9px;border:1px solid #b8c2d1;border-radius:8px;background:#fff}textarea{height:135px;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:110px}button,.btn{border:0;border-radius:9px;padding:10px 12px;background:var(--blue);color:#fff;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#475569}.green{background:#15803d}.amber{background:#b45309}.danger{background:#b91c1c}.small{font-size:12px;color:var(--muted);line-height:1.45}.notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;font-size:12px;margin:10px 0}.statusline{padding:10px;border-radius:9px;background:#f8fafc;border:1px solid #e2e8f0;margin-top:10px}.progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin:8px 0}.bar{height:100%;background:#2563eb;width:0;transition:width .25s}.metrics{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:9px}.metric{padding:11px;background:#f8fafc;border:1px solid #dbe2ec;border-radius:10px}.metric b{display:block;font-size:22px;margin-top:2px}.metric .small{font-size:11px}.tablewrap{overflow:auto;max-height:520px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.pass{color:var(--green);font-weight:800}.fail{color:var(--red);font-weight:800}.running{color:var(--blue);font-weight:800}.paused{color:var(--amber);font-weight:800}.downloads a{margin:4px 4px 0 0}.error{color:var(--red);font-weight:700;white-space:pre-wrap}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.hidden{display:none}.runlist{max-height:190px;overflow:auto}.runitem{border-bottom:1px solid #e5e7eb;padding:7px 0;cursor:pointer}.runitem:hover{background:#f8fafc}@media(max-width:1050px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="top"><b>Hybrid VeriCoT–VRG v028 · ProofWriter 자동 다운로드 → Pilot → Full Runner</b><span class="right"><a href="/discussion-lab">Discussion Lab</a> · <a href="/comparative-evaluation">Comparative</a> · <a href="/suite-evaluation">Evaluation</a> · <a href="/test-lab">Individual Test Lab</a> · <a href="/experiment">Experiment</a> · <a href="/hybrid">단일 Graph</a> · <a href="/">Universal Viewer</a></span></div>
+<div class="wrap"><div class="layout">
+<div class="card">
+  <b>1. Dataset 준비</b>
+  <div class="notice">데이터 파일이 없어도 된다. <b>ProofWriter 600개 자동 다운로드 + Pilot 10 실행</b>을 누르면 Hugging Face의 validation split을 내려받고 즉시 시작한다. Pilot 종료 후 <b>나머지 전체 실행</b>을 누르면 11번째부터 이어진다.</div>
+  <div id="datasetStatus" class="statusline">ProofWriter 자동 다운로드 상태를 확인 중...</div>
+  <div class="row" style="margin-top:8px"><button id="autoPilotBtn" class="green" onclick="downloadAndPilot()">ProofWriter 600 자동 다운로드 + Pilot 10</button><button id="downloadBtn" class="secondary" onclick="downloadDataset(false)">데이터만 다운로드</button></div>
+  <div class="small" style="margin-top:6px">자동 소스: <span class="mono">renma/ProofWriter · default · validation · 600 rows</span>. 현재 프로젝트와 동일한 A/B/C 형식이다.</div>
+  <hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0">
+  <label>직접 사용할 ProofWriter JSON / JSONL 파일</label>
+  <input id="datasetFile" type="file" accept=".json,.jsonl,.txt">
+  <div class="row" style="margin-top:8px"><button class="secondary" onclick="loadSample()">샘플 넣기</button><button class="secondary" onclick="loadRuns()">최근 Run 불러오기</button></div>
+  <label>또는 JSON/JSONL 붙여넣기</label><textarea id="datasetText" placeholder="한 줄당 JSON object 또는 JSON array"></textarea>
+
+  <b>2. 실행 설정</b>
+  <div class="row"><div><label>모델</label><input id="model" value="gpt-5.6"></div><div><label>Reasoning</label><select id="effort"><option>low</option><option>medium</option><option>high</option></select></div></div>
+  <div class="row"><div><label>동시 Worker</label><select id="workers"><option value="1" selected>1 (안전)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div><div><label>API 오류 재시도</label><select id="retries"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div></div>
+  <div class="row"><div><label>Repair 반복</label><select id="repairs"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></div><div><label>Repair mode</label><select id="mode"><option value="blind">Blind</option><option value="guided">Guided</option></select></div></div>
+  <div class="row"><div><label>전체 Token 상한</label><input id="tokenLimit" type="number" value="0" min="0"><div class="small">0 = 제한 없음</div></div><div><label>실패 상한</label><input id="failureLimit" type="number" value="0" min="0"><div class="small">0 = 제한 없음</div></div></div>
+  <label><input id="formalizer" type="checkbox" checked style="width:auto"> GPT formalizer fallback</label>
+  <label><input id="grounder" type="checkbox" checked style="width:auto"> Premise grounding</label>
+  <label><input id="retryFailed" type="checkbox" checked style="width:auto"> 전체 실행 때 실패 Case 재시도</label>
+
+  <b>3. 실행</b>
+  <div class="row" style="margin-top:8px"><button id="pilotBtn" onclick="startNew('pilot')">직접 파일로 Pilot 10 실행</button><button id="fullBtn" class="green" onclick="resumeFull()" disabled>같은 Run에서 나머지 전체 실행</button></div>
+  <div class="row" style="margin-top:8px"><button id="pauseBtn" class="amber" onclick="pauseRun()" disabled>체크포인트에서 일시정지</button><button class="secondary" onclick="refreshStatus()">상태 새로고침</button></div>
+  <div id="statusBox" class="statusline small">아직 실행하지 않았습니다.</div>
+  <label>현재 Run ID</label><input id="runId" class="mono" readonly placeholder="Pilot 실행 후 생성됨">
+
+  <div id="recentPanel" class="hidden" style="margin-top:14px"><b>최근 Run</b><div id="runList" class="runlist"></div></div>
+</div>
+
+<div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><b>진행 상황</b><div id="phase" class="small">-</div></div><div id="stateBadge" class="small">created</div></div>
+    <div class="progress"><div id="progressBar" class="bar"></div></div><div id="progressText" class="small">0 / 0</div>
+    <div id="metrics" class="metrics" style="margin-top:12px"></div>
+    <div id="downloads" class="downloads" style="margin-top:12px"></div>
+  </div>
+  <div class="card" style="margin-top:13px"><b>Checkpoint / Phase History</b><pre id="history" class="small mono" style="white-space:pre-wrap"></pre></div>
+  <div class="card" style="margin-top:13px"><b>운영 안내</b><div class="small">
+    • 브라우저를 닫아도 로컬 서버가 켜져 있으면 Job은 계속된다.<br>
+    • 서버가 종료되거나 Ctrl+C를 누르면 결과는 Case별 JSON과 <code>index.jsonl</code>에 남으며 같은 Run ID로 재개할 수 있다.<br>
+    • 각 Case 결과는 <code>outputs/hybrid_runs/&lt;run_id&gt;/cases</code>에 즉시 저장된다.<br>
+    • 전체 완료 후 ZIP을 내려받으면 Graph, Repair history, summary CSV가 모두 포함된다.
+  </div></div>
+  <div id="error" class="error" style="margin-top:12px"></div>
+</div>
+</div></div>
+<script>
+let currentRunId=''; let pollTimer=null; let downloadedDatasetReady=false;
+function settings(mode){return {mode,pilot_count:10,model:document.getElementById('model').value.trim(),reasoning_effort:document.getElementById('effort').value,max_workers:+document.getElementById('workers').value,max_retries:+document.getElementById('retries').value,retry_failed:document.getElementById('retryFailed').checked,max_repair_iterations:+document.getElementById('repairs').value,repair_mode:document.getElementById('mode').value,use_llm_formalizer:document.getElementById('formalizer').checked,use_premise_grounder:document.getElementById('grounder').checked,allow_external_premises:false,prefer_z3:true,max_total_tokens:+document.getElementById('tokenLimit').value,max_failures:+document.getElementById('failureLimit').value,max_output_tokens:5000}}
+async function loadSample(){const r=await fetch('/api/proofwriter-sample');const x=await r.json();document.getElementById('datasetText').value=JSON.stringify(x.record)}
+async function refreshDatasetStatus(){try{const r=await fetch('/api/proofwriter-dataset/status');const x=await r.json();downloadedDatasetReady=!!x.available;const box=document.getElementById('datasetStatus');if(x.available){box.innerHTML=`<b class="pass">다운로드 완료</b> · ${x.row_count||0}개 · <span class="mono">${x.dataset_path||''}</span> · <a href="/api/proofwriter-dataset/file">JSONL 받기</a>`;}else{box.innerHTML='<b>아직 다운로드되지 않음</b> · 위 자동 다운로드 버튼을 누르면 된다.';}}catch(e){document.getElementById('datasetStatus').textContent='다운로드 상태 확인 실패: '+e.message}}
+async function downloadDataset(refresh){clearError();toggleBusy(true);try{const r=await fetch('/api/proofwriter-dataset/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})});const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));downloadedDatasetReady=true;await refreshDatasetStatus();return x;}catch(e){showError(e.message);throw e}finally{toggleBusy(false)}}
+async function downloadAndPilot(){clearError();toggleBusy(true);try{const payload={...settings('pilot'),refresh_dataset:false};const r=await fetch('/api/hybrid-batch-job/start-proofwriter-600',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));downloadedDatasetReady=true;await refreshDatasetStatus();setRun(x.run_id);render(x);startPolling();}catch(e){showError(e.message)}finally{toggleBusy(false)}}
+async function startNew(mode){clearError();const file=document.getElementById('datasetFile').files[0];const text=document.getElementById('datasetText').value.trim();if(!file&&!text){showError('직접 파일을 선택하거나 JSON/JSONL을 붙여넣으세요. 데이터가 없다면 위의 자동 다운로드 + Pilot 버튼을 누르면 됩니다.');return}toggleBusy(true);try{let x;if(file){const fd=new FormData();fd.append('file',file);fd.append('settings_json',JSON.stringify(settings(mode)));const r=await fetch('/api/hybrid-batch-job/upload',{method:'POST',body:fd});x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));}else{const payload={...settings(mode),dataset_text:text};const r=await fetch('/api/hybrid-batch-job/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));}setRun(x.run_id);render(x);startPolling();}catch(e){showError(e.message)}finally{toggleBusy(false)}}
+async function resumeFull(){if(!currentRunId)return;clearError();toggleBusy(true);try{const payload={...settings('full'),run_id:currentRunId};const r=await fetch('/api/hybrid-batch-job/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));render(x);startPolling();}catch(e){showError(e.message)}finally{toggleBusy(false)}}
+async function pauseRun(){if(!currentRunId)return;const r=await fetch(`/api/hybrid-batch-job/${encodeURIComponent(currentRunId)}/pause`,{method:'POST'});const x=await r.json();if(!r.ok){showError(x.detail||JSON.stringify(x));return}render(x)}
+async function refreshStatus(){if(!currentRunId)return;try{const r=await fetch(`/api/hybrid-batch-job/${encodeURIComponent(currentRunId)}`);const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));render(x)}catch(e){showError(e.message)}}
+function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(async()=>{await refreshStatus();const state=document.getElementById('stateBadge').dataset.state;if(['completed','completed_with_errors','paused','stopped','error'].includes(state))clearInterval(pollTimer)},2000)}
+function setRun(id){currentRunId=id;document.getElementById('runId').value=id;localStorage.setItem('vrg_operational_run_id',id);document.getElementById('fullBtn').disabled=false;document.getElementById('pauseBtn').disabled=false}
+function render(x){setRun(x.run_id);const s=x.summary||{};const total=s.total_records||x.total_records||0,done=s.processed_records||0;document.getElementById('progressBar').style.width=(total?Math.min(100,done/total*100):0)+'%';document.getElementById('progressText').textContent=`${done} / ${total} · 남음 ${s.remaining_records??Math.max(0,total-done)}`;document.getElementById('phase').textContent=`현재 단계: ${x.active_mode||'-'} · 선택 ${x.selected_records||0}개`;const badge=document.getElementById('stateBadge');badge.textContent=x.status;badge.dataset.state=x.status;badge.className=x.status==='running'?'running':(x.status==='paused'||x.status==='stopped'?'paused':(x.status==='error'?'fail':'pass'));const vals=[['처리',done],['Initial PASS',s.initial_pass_count||0],['Final PASS',s.final_pass_count||0],['Repair 성공',s.repair_success_count||0],['실패',s.failed_records||0],['정답 일치',s.answer_correct_count||0],['Input tokens',s.total_input_tokens||0],['Output tokens',s.total_output_tokens||0],['API calls',s.total_api_calls||0],['평균 ms',Math.round(s.mean_elapsed_ms||0)]];document.getElementById('metrics').innerHTML=vals.map(v=>`<div class="metric"><span class="small">${v[0]}</span><b>${v[1]}</b></div>`).join('');document.getElementById('statusBox').textContent=x.message||x.status;document.getElementById('history').textContent=JSON.stringify(x.phase_history||[],null,2);const d=x.download_files||{};document.getElementById('downloads').innerHTML=Object.keys(d).length?`<a class="btn secondary" href="${d.summary_csv}">Summary CSV</a><a class="btn secondary" href="${d.predictions_jsonl}">Predictions JSONL</a><a class="btn green" href="${d.archive_zip}">전체 Run ZIP</a>`:'';document.getElementById('pauseBtn').disabled=x.status!=='running'&&x.status!=='queued';document.getElementById('fullBtn').disabled=false}
+async function loadRuns(){const r=await fetch('/api/hybrid-batch-jobs');const x=await r.json();const panel=document.getElementById('recentPanel');panel.classList.remove('hidden');document.getElementById('runList').innerHTML=(x.runs||[]).map(v=>`<div class="runitem" onclick="openRun('${v.run_id}')"><b>${v.run_id}</b><div class="small">${v.status} · ${v.updated_at||''}</div></div>`).join('')||'<div class="small">저장된 Run이 없습니다.</div>'}
+async function openRun(id){setRun(id);await refreshStatus();startPolling()}
+function toggleBusy(v){document.getElementById('pilotBtn').disabled=v;document.getElementById('autoPilotBtn').disabled=v;document.getElementById('downloadBtn').disabled=v;document.getElementById('fullBtn').disabled=v||!currentRunId}
+function showError(t){document.getElementById('error').textContent=t}function clearError(){showError('')}
+window.addEventListener('load',async()=>{await refreshDatasetStatus();const saved=localStorage.getItem('vrg_operational_run_id');if(saved){setRun(saved);await refreshStatus();const state=document.getElementById('stateBadge').dataset.state;if(['running','queued'].includes(state))startPolling()}else{render({run_id:'',status:'created',summary:{total_records:0,processed_records:0},phase_history:[]});loadSample()}})
+</script>
+</body></html>

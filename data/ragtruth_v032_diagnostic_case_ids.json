@@ -1,0 +1,30 @@
+{
+  "source_run_id": "ragtruth_localization_20260801_191604",
+  "purpose": "Exclude all 24 cases already evaluated in the v032 diagnostic pilot from the v033 unseen QA pilot.",
+  "case_ids": [
+    "10335",
+    "7325",
+    "14509",
+    "12297",
+    "349",
+    "180",
+    "9001",
+    "8474",
+    "15732",
+    "13136",
+    "776",
+    "908",
+    "10543",
+    "7582",
+    "14506",
+    "12261",
+    "1519",
+    "2655",
+    "10003",
+    "7446",
+    "15788",
+    "15677",
+    "1683",
+    "4341"
+  ]
+}

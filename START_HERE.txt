@@ -1,0 +1,6 @@
+CPR_STRING unified release
+
+1. Run setup.bat
+2. Copy .env.example to .env and add OPENAI_API_KEY
+3. Run run_string.bat
+4. Read README.md and docs\QUICK_START.md

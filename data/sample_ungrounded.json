@@ -1,0 +1,17 @@
+{
+  "id": "bob_ungrounded_step",
+  "premises": [
+    {"id": "p1", "text": "Bob is quiet."},
+    {"id": "p2", "text": "Quiet people are kind."}
+  ],
+  "question": "Is Bob kind?",
+  "gold_answer": "Yes",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is quiet."},
+      {"id": "s2", "text": "Bob is a doctor."},
+      {"id": "s3", "text": "Bob is kind."}
+    ],
+    "answer": "Yes"
+  }
+}

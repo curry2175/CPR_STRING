@@ -1,0 +1,28 @@
+{
+  "id": "branched_graph_local",
+  "premises": [
+    {"id": "p1", "text": "Bob is calm."},
+    {"id": "p2", "text": "Calm people are focused."},
+    {"id": "p3", "text": "Focused people are careful."},
+    {"id": "p4", "text": "Careful people are reliable."},
+    {"id": "p5", "text": "Bob is kind."},
+    {"id": "p6", "text": "Kind people are helpful."},
+    {"id": "p7", "text": "Helpful people are admired."},
+    {"id": "p8", "text": "Admired people are successful."}
+  ],
+  "question": "Is Bob successful?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is calm."},
+      {"id": "s2", "text": "Bob is focused."},
+      {"id": "s3", "text": "Bob is careful."},
+      {"id": "s4", "text": "Bob is reliable."},
+      {"id": "s5", "text": "Bob is kind."},
+      {"id": "s6", "text": "Bob is helpful."},
+      {"id": "s7", "text": "Bob is admired."},
+      {"id": "s8", "text": "Bob is successful."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes"
+}

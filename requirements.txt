@@ -1,0 +1,7 @@
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29,<1.0
+z3-solver>=4.12,<5.0
+openai>=1.100,<3.0
+pydantic>=2.7,<3.0
+
+python-multipart>=0.0.9,<1.0

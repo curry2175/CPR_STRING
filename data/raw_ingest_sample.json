@@ -1,0 +1,10 @@
+{
+  "case_id": "raw_llm_bob_kind",
+  "premises": [
+    "Bob is quiet.",
+    "Quiet people are kind."
+  ],
+  "question": "Is Bob kind?",
+  "gold_answer": "Yes",
+  "llm_response": "Reasoning:\n1. Bob is quiet.\n2. Quiet people are kind.\n3. Therefore, Bob is kind.\nFinal answer: Yes"
+}

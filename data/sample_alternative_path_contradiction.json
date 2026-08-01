@@ -1,0 +1,18 @@
+{
+  "id": "alternative_path_contradiction",
+  "premises": [
+    {"id": "p1", "text": "Bob is quiet."},
+    {"id": "p2", "text": "Quiet people are kind."},
+    {"id": "p3", "text": "Kind people are respected."},
+    {"id": "p4", "text": "If something is not kind, then it is respected."}
+  ],
+  "question": "Is Bob respected?",
+  "gold_answer": "Yes",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is not kind."},
+      {"id": "s2", "text": "Bob is respected."}
+    ],
+    "answer": "Yes"
+  }
+}

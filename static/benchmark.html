@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Incremental Verification Benchmark</title>
+  <style>
+    :root { --bg:#f4f6f8; --panel:#fff; --text:#17212b; --muted:#64748b; --border:#d8dee6; --accent:#2563eb; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Pretendard,system-ui,sans-serif}
+    .app{max-width:1250px;margin:0 auto;padding:22px}.top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+    h1{font-size:22px;margin:0}.btn,input{font:inherit}.btn{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:9px 12px;color:var(--text);cursor:pointer;text-decoration:none}.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{border:1px solid var(--border);border-radius:12px;padding:10px}.metric small{display:block;color:var(--muted)}.metric strong{display:block;margin-top:5px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;border-bottom:1px solid var(--border);padding:9px;font-size:13px;vertical-align:top}th{color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.error{color:#b91c1c;white-space:pre-wrap}.note{color:var(--muted);font-size:13px}.good{color:#15803d}.bad{color:#b91c1c}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.table-wrap{overflow:auto}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div><h1>Incremental Verification Benchmark · v015</h1><div class="note">Graph-local 재검증과 전체 재검증을 반복 비교하고 결과 일치율·속도·범위 축소율을 측정합니다.<a class="btn" href="/ingest">Raw LLM</a><a class="btn" href="/dataset">Dataset</a><a class="btn" href="/audit-verify">Audit Verify</a></div></div>
+    <div class="controls"><a class="btn" href="/">Graph</a><a class="btn" href="/batch">배치 평가</a><a class="btn" href="/preflight">입력 사전점검</a><a class="btn" href="/quality">Reasoning 품질</a><a class="btn" href="/mutation">오류 주입 시험</a></div>
+  </div>
+  <div class="panel controls">
+    <label>반복 횟수 <input id="repetitions" type="number" min="1" max="30" value="5" style="width:80px;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+    <label><input id="preferZ3" type="checkbox" checked> Z3 우선</label>
+    <button id="run" class="btn primary">내장 4개 시나리오 실행</button>
+    <button id="download" class="btn">결과 JSON 저장</button>
+    <span id="error" class="error"></span>
+  </div>
+  <div class="metrics" style="margin-top:16px">
+    <div class="metric"><small>시나리오</small><strong id="mScenarios">-</strong></div>
+    <div class="metric"><small>Parity 통과</small><strong id="mParity">-</strong></div>
+    <div class="metric"><small>Graph-local 사례</small><strong id="mLocal">-</strong></div>
+    <div class="metric"><small>평균 속도 배수</small><strong id="mSpeed">-</strong></div>
+    <div class="metric"><small>평균 범위 축소</small><strong id="mScope">-</strong></div>
+  </div>
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>시나리오</th><th>편집</th><th>모드</th><th>재사용 / 재검증</th><th>Final 재사용</th><th>범위 축소</th><th>부분 ms</th><th>전체 ms</th><th>속도</th><th>Parity</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="10" class="note">아직 실행하지 않았습니다.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<script>
+let result=null; const $=id=>document.getElementById(id);
+function render(data){result=data; const s=data.summary||{};$('mScenarios').textContent=s.scenario_count??'-';$('mParity').textContent=`${s.parity_pass_count??0} / ${s.scenario_count??0}`;$('mLocal').textContent=s.graph_local_scenario_count??'-';$('mSpeed').textContent=s.mean_speedup_ratio==null?'-':`${s.mean_speedup_ratio}×`;$('mScope').textContent=s.mean_scope_reduction_percent==null?'-':`${s.mean_scope_reduction_percent}%`;
+ const body=$('rows');body.innerHTML='';for(const row of data.scenarios||[]){const tr=document.createElement('tr');tr.innerHTML=`<td><strong>${row.scenario_id}</strong><br><span class="note">${row.description||''}</span></td><td>${row.changed_node_id}</td><td>${row.mode}</td><td>${row.reused_reasoning_count} / ${row.revalidated_reasoning_count}</td><td>${row.final_reused?'Yes':'No'}</td><td>${row.scope_reduction_percent??0}%</td><td>${row.incremental_mean_ms}</td><td>${row.full_mean_ms}</td><td>${row.speedup_ratio??'-'}×</td><td class="${row.parity_all_repetitions?'good':'bad'}">${row.parity_all_repetitions?'MATCH':'MISMATCH'}</td>`;body.appendChild(tr)}}
+$('run').addEventListener('click',async()=>{$('error').textContent='';try{const r=await fetch('/api/incremental-benchmark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({repetitions:Number($('repetitions').value||5),prefer_z3:$('preferZ3').checked})});const p=await r.json();if(!r.ok)throw new Error(p.detail||'Benchmark failed');render(p)}catch(e){$('error').textContent=e.message}});
+$('download').addEventListener('click',()=>{if(!result)return;const b=new Blob([JSON.stringify(result,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='incremental_benchmark.json';a.click();URL.revokeObjectURL(u)});
+</script>
+</body>
+</html>

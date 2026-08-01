@@ -1,0 +1,48 @@
+{
+  "schema_version": "github-release-v050-330",
+  "evaluation": {
+    "dataset": "RAGTruth",
+    "task_type": "QA",
+    "split": "test",
+    "completed_cases": 330,
+    "total_target_cases": 875,
+    "clean_n": 263,
+    "hallucinated_n": 67
+  },
+  "character_micro_f1_percent": {
+    "raw_direct": 37.42,
+    "original_dualgraph_v046": 35.55,
+    "optimized_dualgraph": 47.59,
+    "optimized_delta_vs_raw_pp": 10.17
+  },
+  "optimized_gate": {
+    "contradicted_by": 0.99,
+    "partially_supported_by": 0.84,
+    "qualified_by": 0.89,
+    "not_found_in_source": 0.42,
+    "requires_assumption": 0.66,
+    "partial_span_mode": "core",
+    "infer_error_label": false
+  },
+  "optimized_response_level": {
+    "TP": 44,
+    "FN": 23,
+    "FP": 20,
+    "TN": 243,
+    "clean_false_positive_rate_percent": 7.6,
+    "hallucination_sensitivity_percent": 65.67,
+    "strict_rescue_cases": 0
+  },
+  "search": {
+    "configs_evaluated": 24410,
+    "api_calls": 0,
+    "best_global_threshold": 0.66,
+    "best_global_f1_percent": 42.3,
+    "best_global_span_mode": "core",
+    "best_global_infer_error_label": false
+  },
+  "source_notes": [
+    "The 330-case console log is included.",
+    "The full local cases.jsonl and generation cache were not uploaded to this chat; use scripts/IMPORT_LOCAL_RUN_WINDOWS.bat on the original Windows machine to copy them into this repository."
+  ]
+}

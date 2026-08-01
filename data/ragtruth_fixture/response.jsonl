@@ -1,0 +1,4 @@
+{"id":"r1","source_id":"s1","model":"fixture","temperature":0.0,"labels":[],"split":"test","quality":"good","response":"The capital of France is Paris."}
+{"id":"r2","source_id":"s1","model":"fixture","temperature":0.0,"labels":[{"start":25,"end":29,"text":"Lyon","label_type":"Evident Conflict","meta":"Paris is the capital."}],"split":"test","quality":"good","response":"The capital of France is Lyon."}
+{"id":"r3","source_id":"s2","model":"fixture","temperature":0.0,"labels":[],"split":"test","quality":"good","response":"The trial enrolled 100 adults and found no significant mortality difference."}
+{"id":"r4","source_id":"s2","model":"fixture","temperature":0.0,"labels":[{"start":49,"end":76,"text":"cut mortality by 50 percent","label_type":"Evident Baseless Info","meta":"No such effect was reported."}],"split":"test","quality":"good","response":"The trial enrolled 100 adults, and the treatment cut mortality by 50 percent."}

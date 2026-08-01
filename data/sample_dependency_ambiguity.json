@@ -1,0 +1,17 @@
+{
+  "id": "dependency_ambiguity",
+  "premises": [
+    {"id": "p1", "text": "Bob is quiet."},
+    {"id": "p2", "text": "Quiet people are kind."},
+    {"id": "p3", "text": "Bob is smart."},
+    {"id": "p4", "text": "Smart people are kind."}
+  ],
+  "question": "Is Bob kind?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "Bob is kind."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes"
+}

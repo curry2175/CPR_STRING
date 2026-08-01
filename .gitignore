@@ -1,0 +1,45 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+*api_key*
+
+# Generated outputs and local caches
+outputs/**
+!outputs/.gitkeep
+local_cache/
+
+# Downloaded third-party datasets
+data/downloaded/
+data/processbench/*.jsonl
+data/clutrr/*.jsonl
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+*.zip
+
+# Integrated application data and generated reports
+applications/impact_factor/corpus/*
+!applications/impact_factor/corpus/.gitkeep
+applications/impact_factor/out/*
+!applications/impact_factor/out/.gitkeep
+applications/impact_factor/studysets/private/
+applications/aime_self_revision/*.json
+applications/aime_self_revision/*_visualizations/
+
+# Model caches
+*generation_cache*.json
+*_cache.json

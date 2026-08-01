@@ -1,0 +1,20 @@
+{
+  "release": "CPR_STRING unified final-presentation release",
+  "framework": "STRING — System for Traceable Reasoning Integrity through Networked Graphs",
+  "components": [
+    "six_agent_core",
+    "chrome_extension",
+    "ragtruth_evaluation",
+    "impact_factor_application",
+    "aime_self_revision"
+  ],
+  "optimized_gate": "config/optimized_gate_330.json",
+  "development_results": {
+    "cases": 330,
+    "raw_character_micro_f1": 0.3742,
+    "optimized_graph_character_micro_f1": 0.4759,
+    "delta_percentage_points": 10.17
+  },
+  "presentation": "docs/STRING_CPR_Track1_CR.pdf",
+  "provenance": "THIRD_PARTY_NOTICES.md"
+}

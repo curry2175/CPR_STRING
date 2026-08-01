@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VRG v028 Experiment Dashboard</title>
+<style>
+:root{--bg:#eef2f7;--card:#fff;--line:#d7deea;--text:#172033;--muted:#64748b;--blue:#1d4ed8;--green:#15803d;--red:#b91c1c;--amber:#b45309;--purple:#6d28d9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}.top{padding:16px 24px;background:#111827;color:white}.top a{color:#bfdbfe;text-decoration:none}.top .right{float:right}.wrap{max-width:1540px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:430px 1fr;gap:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 9px rgba(15,23,42,.04);margin-bottom:14px}h2,h3{margin:0 0 10px}label{display:block;font-size:13px;font-weight:750;margin:9px 0 4px}input,select{width:100%;padding:9px;border:1px solid #b8c2d1;border-radius:8px;background:white}.check{display:grid;grid-template-columns:1fr 1fr;gap:5px}.check label{font-weight:500;margin:2px 0}.check input{width:auto}.row{display:flex;gap:8px}.row>*{flex:1}.btn,button{border:0;border-radius:9px;padding:10px 12px;background:var(--blue);color:#fff;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.5}.green{background:var(--green)}.purple{background:var(--purple)}.secondary{background:#475569}.notice{font-size:12px;line-height:1.5;padding:10px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:9px}.warning{border-color:#fde68a;background:#fffbeb}.small{font-size:12px;color:var(--muted);line-height:1.45}.metrics{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:9px}.metric{border:1px solid #dbe2ec;border-radius:10px;padding:11px;background:#f8fafc}.metric b{display:block;font-size:22px;margin-top:3px}.tablewrap{overflow:auto;max-height:520px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;white-space:nowrap}.pass{color:var(--green);font-weight:800}.fail{color:var(--red);font-weight:800}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.error{color:var(--red);white-space:pre-wrap;font-weight:700}.tabs{display:flex;gap:7px;margin-bottom:12px}.tab{background:#64748b}.tab.active{background:#1d4ed8}.downloads a{margin:4px}.hidden{display:none}.spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:1050px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="top"><b>Hybrid VeriCoT–VRG v028 · Experiment Dashboard</b><span class="right"><a href="/discussion-lab">Discussion Lab</a> · <a href="/comparative-evaluation">Comparative</a> · <a href="/suite-evaluation">Evaluation</a> · <a href="/test-lab">Individual Test Lab</a> · <a href="/case-browser">Case Browser</a> · <a href="/hybrid-batch">Batch Runner</a></span></div>
+<div class="wrap"><div class="grid">
+<div>
+ <div class="card">
+  <h3>Source Run</h3><label>교정된 Run</label><select id="run"></select>
+  <div class="notice">기본값은 v019에서 교정된 ProofWriter 600 Run이다. Fault Injection은 <b>API 0회</b>로 실행되고, Natural Repair 비교만 OpenAI API를 사용한다.</div>
+ </div>
+ <div class="card">
+  <h3>1. Controlled Fault Injection</h3>
+  <div class="row"><div><label>정상 Case 수</label><input id="sample" type="number" min="1" max="600" value="10"></div><div><label>Random seed</label><input id="seed" type="number" value="2026"></div></div><label>최대 reasoning steps</label><input id="maxSteps" type="number" min="0" value="8"><div class="small">0 = 제한 없음. 긴 chain은 실험시간이 크게 늘어나므로 8을 권장.</div><label><input id="z3" type="checkbox" style="width:auto"> Z3 backend 사용 <span class="small">체크 해제 시 ProofWriter에 빠른 finite-Horn verifier 사용</span></label>
+  <label>오류 유형</label><div id="faultChecks" class="check"></div>
+  <label>난이도</label><div id="difficultyChecks" class="check"></div>
+  <div class="small">100 cases × 최대 8 faults × 2 levels ≈ 최대 1,600 mutations. 관계형이 아닌 Step에서는 argument swap이 자동 제외될 수 있다.</div>
+  <button id="faultBtn" class="green" style="width:100%;margin-top:10px" onclick="runFault()">API 0회로 Fault Injection 실행</button>
+ </div>
+ <div class="card">
+  <h3>2. Natural Failure Repair</h3>
+  <div class="notice warning">v019 Initial FAIL Case만 동일한 최초 출력에서 비교한다. <b>Blind/Guided/Cascade는 실제 API 호출</b>이 발생한다. Gold answer는 모델에 전달하지 않는다.</div>
+  <label>비교 조건</label><div id="repairChecks" class="check"></div>
+  <div class="row"><div><label>최대 Case</label><input id="maxCases" type="number" value="0" min="0"><div class="small">0 = 자연 실패 전체</div></div><div><label>Reasoning</label><select id="effort"><option>low</option><option>medium</option><option>high</option></select></div></div>
+  <label>모델</label><input id="model" value="gpt-5.6">
+  <button id="repairBtn" class="purple" style="width:100%;margin-top:10px" onclick="runRepair()">Blind / Guided / Cascade 비교 실행</button>
+ </div>
+ <div class="card"><h3>저장된 Experiment</h3><div id="experimentList" class="small">불러오는 중...</div></div>
+</div>
+<div>
+ <div class="card"><div class="tabs"><button class="tab active" onclick="showTab('summary',this)">Summary</button><button class="tab" onclick="showTab('groups',this)">Group metrics</button><button class="tab" onclick="showTab('files',this)">Downloads</button></div>
+  <div id="busy" class="notice hidden"><span class="spinner"></span> 실행 중입니다. 브라우저 요청이 끝날 때까지 이 화면을 유지하세요.</div>
+  <div id="summaryTab"><div id="headline" class="small">아직 실행된 실험이 없습니다.</div><div id="metrics" class="metrics" style="margin-top:12px"></div></div>
+  <div id="groupsTab" class="hidden"><div class="tablewrap"><table class="table"><thead id="groupHead"></thead><tbody id="groupBody"></tbody></table></div></div>
+  <div id="filesTab" class="hidden"><div id="downloads" class="downloads"></div></div>
+  <div id="error" class="error" style="margin-top:12px"></div>
+ </div>
+ <div class="card"><h3>해석 기준</h3><div class="small">
+  <b>Valid graph acceptance</b>: 정상 Graph를 정상으로 통과시킨 비율<br>
+  <b>Invalid graph rejection</b>: 주입 오류를 하나라도 검출한 비율<br>
+  <b>Root exact localization</b>: 최초 오류 Node를 정확히 지목한 비율<br>
+  <b>Affected-node F1</b>: Root에서 실제로 영향받는 downstream Node 집합과 검출 집합의 일치도<br>
+  <b>Structural rejection</b>: Step 삭제처럼 참조 구조가 깨진 오류를 schema 단계에서 거부한 비율<br>
+  <b>Harmful repair</b>: Repair 전 정답이었으나 Repair 후 오답이 된 수<br>
+  <b>Graph recovery</b>: Initial FAIL이 Repair 후 완전 PASS로 바뀐 수
+ </div></div>
+</div>
+</div></div>
+<script>
+let config=null,currentId='';
+const $=id=>document.getElementById(id);
+async function init(){const r=await fetch('/api/experiment/config');config=await r.json();$('run').innerHTML=(config.source_runs||[]).map(x=>`<option value="${x.run_id}" ${x.run_id==='proofwriter_600_v019_reverified'?'selected':''}>${x.run_id} · ${x.processed_records||0} cases</option>`).join('');$('faultChecks').innerHTML=config.fault_types.map(x=>`<label><input type="checkbox" name="fault" value="${x}" checked> ${x}</label>`).join('');$('difficultyChecks').innerHTML=config.difficulties.map(x=>`<label><input type="checkbox" name="difficulty" value="${x}" checked> ${x}</label>`).join('');$('repairChecks').innerHTML=config.repair_modes.map(x=>`<label><input type="checkbox" name="repair" value="${x}" checked> ${x}</label>`).join('');renderList(config.experiments||[])}
+function selected(name){return [...document.querySelectorAll(`input[name=${name}]:checked`)].map(x=>x.value)}
+function busy(v){$('busy').classList.toggle('hidden',!v);$('faultBtn').disabled=v;$('repairBtn').disabled=v;$('error').textContent=''}
+async function runFault(){busy(true);try{const payload={run_id:$('run').value,sample_count:+$('sample').value,seed:+$('seed').value,max_reasoning_steps:+$('maxSteps').value,fault_types:selected('fault'),difficulties:selected('difficulty'),prefer_z3:$('z3').checked};const r=await fetch('/api/experiment/fault-injection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));renderResult(x.summary,x.experiment_id);await reloadList()}catch(e){$('error').textContent=e.message}finally{busy(false)}}
+async function runRepair(){busy(true);try{const payload={run_id:$('run').value,modes:selected('repair'),max_cases:+$('maxCases').value,model:$('model').value.trim(),reasoning_effort:$('effort').value,prefer_z3:$('z3').checked};const r=await fetch('/api/experiment/natural-repair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok)throw new Error(x.detail||JSON.stringify(x));renderResult(x.summary,x.experiment_id);await reloadList()}catch(e){$('error').textContent=e.message}finally{busy(false)}}
+function renderResult(s,id){currentId=id;$('headline').innerHTML=`<b>${s.experiment_type}</b> · <span class="mono">${id}</span> · source ${s.source_run_id}`;let vals=[],groups=[];if(String(s.experiment_type||'').startsWith('controlled_fault_injection')){vals=[['정상 Case',s.sampled_clean_cases],['Valid mutations',s.mutation_count],['Skipped candidates',s.skipped_mutation_count??0],['Valid acceptance',pct(s.valid_graph_acceptance_rate)],['Invalid rejection',pct(s.invalid_graph_rejection_rate)],['Logical rejection',pct(s.logical_semantic_rejection_rate)],['Structural rejection',pct(s.structural_schema_rejection_rate)],['Root exact',pct(s.root_exact_localization_rate)],['Affected F1',s.affected_node_f1],['API calls',s.new_api_calls]];groups=[...(s.by_fault_type||[]),...(s.by_difficulty||[]),...(s.by_rejection_channel||[])];}else{vals=[['Natural failures',s.natural_failure_cases],['조건 수',(s.conditions||[]).length],['API calls',s.total_api_calls],['Input tokens',s.total_input_tokens],['Output tokens',s.total_output_tokens],['Gold sent','No']];groups=s.conditions||[];}$('metrics').innerHTML=vals.map(x=>`<div class="metric"><span class="small">${x[0]}</span><b>${x[1]??'-'}</b></div>`).join('');renderGroup(groups);$('downloads').innerHTML=`<a class="btn secondary" href="/api/experiment/${id}/file/summary.json">Summary JSON</a><a class="btn secondary" href="/api/experiment/${id}/file/report.md">Report</a><a class="btn secondary" href="/api/experiment/${id}/file/paper_table.csv">Paper table</a><a class="btn green" href="/api/experiment/${id}/archive">전체 ZIP</a>`;showTab('summary',document.querySelector('.tab'))}
+function renderGroup(rows){if(!rows.length){$('groupHead').innerHTML='';$('groupBody').innerHTML='<tr><td>그룹 결과 없음</td></tr>';return}const keys=Object.keys(rows[0]);$('groupHead').innerHTML='<tr>'+keys.map(k=>`<th>${k}</th>`).join('')+'</tr>';$('groupBody').innerHTML=rows.map(r=>'<tr>'+keys.map(k=>`<td>${r[k]??''}</td>`).join('')+'</tr>').join('')}
+function pct(x){return x===null||x===undefined?'-':`${x}%`}
+function showTab(name,btn){['summary','groups','files'].forEach(x=>$(x+'Tab').classList.toggle('hidden',x!==name));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
+async function reloadList(){const r=await fetch('/api/experiments');const x=await r.json();renderList(x.experiments||[])}
+function renderList(items){$('experimentList').innerHTML=items.length?items.map(x=>`<div style="padding:7px 0;border-bottom:1px solid #e5e7eb;cursor:pointer" onclick="openExperiment('${x.experiment_id}')"><b>${x.experiment_id}</b><br>${x.experiment_type} · ${x.created_at||''}</div>`).join(''):'저장된 Experiment가 없습니다.'}
+async function openExperiment(id){const r=await fetch(`/api/experiment/${id}`);const x=await r.json();if(!r.ok){$('error').textContent=x.detail||'불러오기 실패';return}renderResult(x,id)}
+init();
+</script>
+</body></html>

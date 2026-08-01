@@ -1,0 +1,2 @@
+{"id":"gsm8k-correct-0","generator":"fixture","problem":"What is 2 + 2?","steps":["We add 2 and 2.","The result is 4."],"final_answer_correct":true,"label":-1}
+{"id":"gsm8k-error-0","generator":"fixture","problem":"What is 3 + 4?","steps":["We add 3 and 4.","3 + 4 = 8.","Therefore the answer is 8."],"final_answer_correct":false,"label":1}

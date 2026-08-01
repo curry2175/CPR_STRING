@@ -1,0 +1,20 @@
+{
+  "id": "proofwriter_mouse_valid",
+  "premises": [
+    {"id": "p1", "text": "The mouse eats the tiger."},
+    {"id": "p2", "text": "If something eats the tiger, then the tiger visits the mouse."},
+    {"id": "p3", "text": "If something visits the mouse, then the mouse is big."},
+    {"id": "p4", "text": "If something is big, then it visits the rabbit."}
+  ],
+  "question": "Does the mouse visit the rabbit?",
+  "gold_answer": "Yes",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "The mouse eats the tiger."},
+      {"id": "s2", "text": "The tiger visits the mouse."},
+      {"id": "s3", "text": "The mouse is big."},
+      {"id": "s4", "text": "The mouse visits the rabbit."}
+    ],
+    "answer": "Yes"
+  }
+}

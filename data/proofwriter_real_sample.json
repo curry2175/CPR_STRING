@@ -1,0 +1,12 @@
+{
+  "record": {
+    "id": "ProofWriter_AttNeg-OWA-D5-270_Q8",
+    "context": "Charlie is green. Dave is quiet. Dave is red. Dave is not white. Erin is not big. Erin is not cold. Erin is green. Harry is big. Harry is cold. Harry is green. If someone is red then they are not white. If Charlie is quiet then Charlie is blue. If someone is quiet and red then they are blue. All white people are cold. All green people are quiet. All blue, green people are red. If someone is red and not white then they are big.",
+    "question": "Based on the above information, is the following statement true, false, or unknown? Charlie is not red.",
+    "options": ["A) True", "B) False", "C) Unknown"],
+    "answer": "B"
+  },
+  "llm_response": "1. Charlie is green.\n2. Charlie is quiet.\n3. Charlie is blue.\n4. Charlie is red.\nFinal answer: False",
+  "prefer_z3": true,
+  "compute_counterfactuals": false
+}

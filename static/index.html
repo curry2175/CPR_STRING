@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive Verified Reasoning Graph</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --text: #17212b;
+      --muted: #64748b;
+      --border: #d8dee6;
+      --accent: #2563eb;
+      --given: #2563eb;
+      --valid: #16803c;
+      --contradiction: #c53030;
+      --ungrounded: #c87900;
+      --untranslatable: #6b7280;
+      --disabled: #9ca3af;
+      --blocked: #7c3aed;
+      --semantic-approved: #0f766e;
+      --semantic-advisory: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, Pretendard, system-ui, sans-serif; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 1500px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+    .topbar h1 { font-size: 22px; margin: 0; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn, select { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 10px; padding: 9px 12px; }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 16px; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+    .metrics { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .metric { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+    .metric small { color: var(--muted); display: block; }
+    .metric strong { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+    .graph-wrap { overflow: auto; min-height: 600px; border: 1px solid var(--border); border-radius: 14px; background: #fbfcfd; }
+    #graph { display: block; min-width: 900px; width: 100%; }
+    .edge { fill: none; stroke-width: 2.5; opacity: .9; }
+    .edge.source_match { stroke: #7c3aed; stroke-dasharray: 3 6; }
+    .edge.reasoning_dependency { stroke: #526271; stroke-width: 3.1; }
+    .edge.reasoning_conflict { stroke: var(--contradiction); stroke-width: 3.1; stroke-dasharray: 5 4; }
+    .edge.error_propagation { stroke: var(--blocked); stroke-width: 4; stroke-dasharray: 2 5; opacity: .95; }
+    .edge.proof_support { stroke: #0f77b5; stroke-dasharray: 10 6; }
+    .edge.proof_conflict { stroke: var(--contradiction); stroke-dasharray: 9 5; stroke-width: 3.2; }
+    .edge.semantic_normalization { stroke: var(--semantic-approved); stroke-width: 3.1; stroke-dasharray: 3 5 10 5; }
+    .edge.semantic_bridge { stroke: var(--semantic-approved); stroke-width: 3.4; stroke-dasharray: 10 4; }
+    .edge.semantic_related { stroke: var(--semantic-advisory); stroke-width: 3.1; stroke-dasharray: 2 7; }
+    .edge-toggle { display:flex; align-items:center; gap:6px; color:var(--text); }
+    .edge-toggle input { width:auto; }
+    .line-key { display:inline-block; width:27px; height:0; border-top:3px solid; vertical-align:middle; }
+    .line-key.source { border-color:#7c3aed; border-top-style:dotted; }
+    .line-key.chain { border-color:#526271; }
+    .line-key.proof { border-color:#0f77b5; border-top-style:dashed; }
+    .line-key.error { border-color:var(--blocked); border-top-style:dotted; }
+    .line-key.semantic { border-color:var(--semantic-approved); border-top-style:dashed; }
+    .node { cursor: pointer; }
+    .node rect { fill: white; stroke-width: 3; rx: 13; }
+    .node.selected rect { stroke-width: 6; }
+    .node.given rect { stroke: var(--given); }
+    .node.valid rect { stroke: var(--valid); }
+    .node.contradiction rect { stroke: var(--contradiction); }
+    .node.ungrounded rect { stroke: var(--ungrounded); }
+    .node.untranslatable rect { stroke: var(--untranslatable); stroke-dasharray: 7 5; }
+    .node.disabled rect { stroke: var(--disabled); stroke-dasharray: 7 5; opacity: .65; }
+    .node.blocked_by_upstream_error rect { stroke: var(--blocked); stroke-dasharray: 4 4; fill: #faf5ff; }
+    .node.approved rect { stroke: var(--semantic-approved); fill: #f0fdfa; }
+    .node.advisory rect { stroke: var(--semantic-advisory); stroke-dasharray: 4 4; fill: #fffbeb; }
+    .node text { pointer-events: none; }
+    .node-title { font-weight: 700; font-size: 13px; fill: var(--text); }
+    .node-body { font-size: 13px; fill: var(--text); }
+    .node-meta { font-size: 11px; fill: var(--muted); }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin: 10px 0 14px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    .editor h2 { margin-top: 0; font-size: 18px; }
+    .label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 5px; }
+    textarea, input[type="text"] { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: white; color: var(--text); }
+    textarea { min-height: 100px; resize: vertical; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f6f8fa; border-radius: 10px; padding: 10px; font-size: 12px; }
+    .badge { display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 12px; border: 1px solid currentColor; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .detail-box { border: 1px solid var(--border); border-radius: 10px; padding: 9px; }
+    .detail-box small { display: block; color: var(--muted); }
+    .error { color: var(--contradiction); white-space: pre-wrap; }
+    .json-area { min-height: 360px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .tab.active { background: var(--accent); color: white; }
+    .hidden { display: none !important; }
+    @media (max-width: 1050px) {
+      .grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1>Interactive Verified Reasoning Graph · MVP v029</h1>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">Premise 기반 AI reasoning의 Proof·Chain·Parent 충분성·최소 Proof·경로 모호성을 함께 분석합니다.</div>
+    </div>
+    <div class="controls">
+      <select id="sampleSelect" aria-label="샘플 선택"></select>
+      <button class="btn" id="loadSample">샘플 불러오기</button>
+      <button class="btn primary" id="verifyButton">전체 재검증</button>
+      <button class="btn" id="downloadButton">결과 JSON 저장</button>
+      <button class="btn" id="auditButton">감사 패키지 ZIP 저장</button>
+      <label class="edge-toggle" title="부분 재검증 결과가 전체 재검증과 같은지 함께 확인합니다. 속도 측정 시에는 끌 수 있습니다."><input id="validateParity" type="checkbox" checked>전체 결과와 비교</label>
+      <a class="btn primary" href="/discussion-lab">Discussion Lab</a><a class="btn primary" href="/lightweight-uplift">Nano Graph Uplift</a><a class="btn primary" href="/suite-evaluation">3-Dataset Evaluation</a><a class="btn" href="/test-lab">Individual Test Lab</a><a class="btn" href="/case-browser">Case Browser</a><a class="btn" href="/hybrid">Hybrid VeriCoT–VRG</a><a class="btn" href="/proofwriter">ProofWriter v015</a><a class="btn" href="/quality">Reasoning 품질</a>
+      <a class="btn" href="/atomize">Step 원자화</a>
+      <a class="btn" href="/evaluation">Gold 평가</a>
+      <a class="btn" href="/batch">배치 평가</a>
+      <a class="btn" href="/benchmark">증분 벤치마크</a>
+      <a class="btn" href="/preflight">입력 사전점검</a>
+      <a class="btn" href="/mutation">자동 오류 주입 시험</a>
+      <a class="btn" href="/ingest">Raw LLM 변환</a>
+      <a class="btn" href="/dataset">Dataset Bridge</a>
+      <a class="btn" href="/audit-verify">감사 ZIP 검증</a>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><small>Logic engine</small><strong id="mEngine">-</strong></div>
+    <div class="metric"><small>Final proof</small><strong id="mFinalProof">-</strong></div>
+    <div class="metric"><small>Final LLM chain</small><strong id="mFinalChain">-</strong></div>
+    <div class="metric"><small>Gold / predicted</small><strong id="mAnswer">-</strong></div>
+    <div class="metric"><small>Error / blocked</small><strong id="mInvalid">-</strong></div>
+    <div class="metric"><small>Selected impact</small><strong id="mImpact">-</strong></div>
+    <div class="metric"><small>Last revalidation</small><strong id="mMode">full</strong></div>
+    <div class="metric"><small>Reused / rechecked</small><strong id="mReuse">-</strong></div>
+    <div class="metric"><small>Parity with full</small><strong id="mParity">-</strong></div>
+    <div class="metric"><small>Scope reduction</small><strong id="mScope">-</strong></div>
+    <div class="metric"><small>Speed vs full</small><strong id="mSpeed">-</strong></div>
+  </div>
+
+  <div class="grid">
+    <main class="panel">
+      <div class="tabs">
+        <button class="btn tab active" data-tab="graphTab">Graph</button>
+        <button class="btn tab" data-tab="jsonTab">Input JSON</button>
+      </div>
+      <section id="graphTab">
+        <div class="legend">
+          <span><i class="dot" style="background:var(--given)"></i>Given</span>
+          <span><i class="dot" style="background:var(--valid)"></i>Valid</span>
+          <span><i class="dot" style="background:var(--contradiction)"></i>Contradiction</span>
+          <span><i class="dot" style="background:var(--ungrounded)"></i>Ungrounded</span>
+          <span><i class="dot" style="background:var(--untranslatable)"></i>Untranslatable</span>
+          <span><i class="dot" style="background:var(--blocked)"></i>Blocked by upstream error</span>
+          <span><i class="dot" style="background:var(--semantic-approved)"></i>Approved semantic rule</span>
+          <span><i class="dot" style="background:var(--semantic-advisory)"></i>Advisory related-only</span>
+        </div>
+        <div class="legend" aria-label="Edge 표시 설정">
+          <label class="edge-toggle"><input id="showSource" type="checkbox" checked><span class="line-key source"></span>원문 일치</label>
+          <label class="edge-toggle"><input id="showChain" type="checkbox" checked><span class="line-key chain"></span>LLM reasoning/충돌 경로</label>
+          <label class="edge-toggle"><input id="showErrors" type="checkbox" checked><span class="line-key error"></span>오류 전파</label>
+          <label class="edge-toggle"><input id="showProof" type="checkbox"><span class="line-key proof"></span>Z3가 선택한 증명 근거</label>
+          <label class="edge-toggle"><input id="showSemantic" type="checkbox" checked><span class="line-key semantic"></span>Semantic 관계</label>
+        </div>
+        <div class="graph-wrap"><svg id="graph" role="img" aria-label="Verified reasoning graph"></svg></div>
+      </section>
+      <section id="jsonTab" class="hidden">
+        <textarea id="caseJson" class="json-area" aria-label="Case JSON"></textarea>
+        <div class="controls" style="margin-top:10px">
+          <button class="btn primary" id="applyJson">JSON 적용 및 검증</button>
+          <span id="jsonError" class="error"></span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel editor">
+      <h2>선택한 Node</h2>
+      <div id="emptySelection" style="color:var(--muted)">Graph에서 Node를 클릭하세요.</div>
+      <div id="nodeEditor" class="hidden">
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <span id="nodeProofStatus" class="badge">Proof: -</span>
+          <span id="nodeChainStatus" class="badge">Chain: -</span>
+        </div>
+        <label class="label" for="nodeText">자연어 문장</label>
+        <textarea id="nodeText"></textarea>
+        <div class="controls" style="margin-top:9px">
+          <button class="btn primary" id="saveNode">Node 수정 후 재검증</button>
+          <button class="btn" id="resetNode">원래 문장 복원</button>
+        </div>
+        <label class="label">Semantic 적용 전 내부 표현</label>
+        <pre id="nodeRawFormal">-</pre>
+        <label class="label">Semantic 적용 후 내부 논리 표현</label>
+        <pre id="nodeFormal">-</pre>
+        <div class="detail-grid">
+          <div class="detail-box"><small>Semantic 관계 유형</small><strong id="nodeSemanticType">-</strong></div>
+          <div class="detail-box"><small>Proof에 사용 가능</small><strong id="nodeSemanticUsable">-</strong></div>
+        </div>
+        <label class="label">적용된 same_as 정규화</label>
+        <pre id="nodeSemanticNormalizations">-</pre>
+        <label class="label">SMT 이전에 필요했던 Semantic 관계</label>
+        <pre id="nodeSemanticProofDeps">-</pre>
+        <label class="label">관련 의미 힌트 · Proof에는 사용하지 않음</label>
+        <pre id="nodeSemanticHints">-</pre>
+        <label class="label">SMT-LIB로 변환된 현재 주장 F</label>
+        <pre id="nodeSmtFormula">-</pre>
+        <div class="detail-grid">
+          <div class="detail-box"><small>검사 1 · K ∧ F</small><strong id="nodeConsistencyResult">-</strong></div>
+          <div class="detail-box"><small>검사 2 · K ∧ ¬F</small><strong id="nodeEntailmentResult">-</strong></div>
+        </div>
+        <label class="label">검사 1의 실제 SMT-LIB · 모순 검사</label>
+        <pre id="nodeConsistencyQuery">-</pre>
+        <label class="label">검사 2의 실제 SMT-LIB · 함의 검사</label>
+        <pre id="nodeEntailmentQuery">-</pre>
+        <label class="label">전역 Proof 판정 설명</label>
+        <pre id="nodeDetail">-</pre>
+        <label class="label">LLM-chain 판정 설명</label>
+        <pre id="nodeChainDetail">-</pre>
+        <div class="detail-grid">
+          <div class="detail-box"><small>바로 영향을 받는 LLM Node</small><strong id="nodeChainDirect">0</strong></div>
+          <div class="detail-box"><small>아래에 연결된 전체 LLM Node</small><strong id="nodeChainDesc">0</strong></div>
+          <div class="detail-box"><small>이 Node가 Final 경로에 있음</small><strong id="nodeChainFinal">No</strong></div>
+          <div class="detail-box"><small>원래 LLM 경로 삭제 시 끊김</small><strong id="nodeStrictBreak">-</strong></div>
+          <div class="detail-box"><small>원래 경로에서 영향받는 Node</small><strong id="nodeStrictAffected">-</strong></div>
+          <div class="detail-box"><small>다른 경로로 Chain 복구 가능</small><strong id="nodeChainRepairable">-</strong></div>
+          <div class="detail-box"><small>Z3 선택 경로의 하위 Node</small><strong id="nodeProofDesc">0</strong></div>
+          <div class="detail-box"><small>삭제해도 논리적 정답 유지</small><strong id="nodeLogicalPreserved">-</strong></div>
+          <div class="detail-box"><small>Proof 판정이 바뀌는 Node</small><strong id="nodeLogicalAffected">-</strong></div>
+          <div class="detail-box"><small>재구성 Chain 판정이 바뀌는 Node</small><strong id="nodeChainAffected">-</strong></div>
+          <div class="detail-box"><small>결론에 논리적으로 필수</small><strong id="nodeLogicalNecessary">-</strong></div>
+          <div class="detail-box"><small>대체 논리 증명 존재</small><strong id="nodeAlternative">-</strong></div>
+          <div class="detail-box"><small>마지막 편집에서 처리 방식</small><strong id="nodeVerificationOrigin">-</strong></div>
+        </div>
+        <label class="label">원문과 동일한 Premise</label>
+        <pre id="nodeSourceMatches">-</pre>
+        <div class="detail-grid">
+          <div class="detail-box"><small>Chain dependency source</small><strong id="nodeChainDependencySource">-</strong></div>
+          <div class="detail-box"><small>Declared dependency 사용</small><strong id="nodeDeclaredUsed">No</strong></div>
+        </div>
+        <label class="label">사용자가/입력 Schema가 선언한 Parent</label>
+        <pre id="nodeDeclaredReasoningDeps">-</pre>
+        <label class="label">Horn이 추정한 Parent</label>
+        <pre id="nodeInferredReasoningDeps">-</pre>
+        <label class="label">실제 Chain 판정에 사용한 Parent</label>
+        <pre id="nodeReasoningDeps">-</pre>
+        <label class="label">LLM conflict Parent</label>
+        <pre id="nodeReasoningConflictDeps">-</pre>
+        <label class="label">직접 차단 Parent / 근본 오류 Node</label>
+        <pre id="nodeBlocking">-</pre>
+        <label class="label">Z3 raw unsat core</label>
+        <pre id="nodeProofRawDeps">-</pre>
+        <label class="label">Z3가 선택한 최소화 근거</label>
+        <pre id="nodeProofDeps">-</pre>
+        <label class="label">Core 최소화로 제거된 항목이 있었나?</label>
+        <pre id="nodeCoreMinimized">-</pre>
+        <label class="label">표시 가능한 다른 증명 경로 · 최대 3개</label>
+        <pre id="nodeAlternativePaths">-</pre>
+        <label class="label">마지막 편집 전후 변화</label>
+        <pre id="editDiff">-</pre>
+        <label class="label">Z3/Horn 실행 통계</label>
+        <pre id="solverStats">-</pre>
+        <div style="color:var(--muted);font-size:12px;margin-top:8px">주의: 위 경로들은 Horn 규칙으로 찾은 지원 집합입니다. 가능한 모든 수학적 증명을 완전히 열거한다는 뜻은 아닙니다.</div>
+      </div>
+      <div id="apiError" class="error" style="margin-top:12px"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  let samples = {};
+  let currentCase = null;
+  let result = null;
+  let selectedId = null;
+  let originals = new Map();
+  let lastVerifiedCase = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function escapeXml(value) {
+    return String(value).replace(/[<>&'\"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
+  }
+
+  function wrapText(text, maxChars = 29) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const candidate = line ? line + ' ' + word : word;
+      if (candidate.length > maxChars && line) { lines.push(line); line = word; }
+      else line = candidate;
+    }
+    if (line) lines.push(line);
+    return lines.slice(0, 4);
+  }
+
+  function statusColor(status) {
+    const map = {given:'var(--given)', valid:'var(--valid)', contradiction:'var(--contradiction)', ungrounded:'var(--ungrounded)', untranslatable:'var(--untranslatable)', blocked_by_upstream_error:'var(--blocked)', disabled:'var(--disabled)', approved:'var(--semantic-approved)', advisory:'var(--semantic-advisory)'};
+    return map[status] || 'var(--muted)';
+  }
+
+  function edgeVisible(relation) {
+    if (relation === 'source_match') return $('showSource').checked;
+    if (relation === 'reasoning_dependency' || relation === 'reasoning_conflict') return $('showChain').checked;
+    if (relation === 'error_propagation') return $('showErrors').checked;
+    if (relation === 'proof_support' || relation === 'proof_conflict') return $('showProof').checked;
+    if (relation === 'semantic_normalization' || relation === 'semantic_bridge' || relation === 'semantic_related') return $('showSemantic').checked;
+    return true;
+  }
+
+  function renderGraph() {
+    if (!result) return;
+    const svg = $('graph');
+    const semantics = result.nodes.filter(n => n.kind === 'semantic');
+    const premises = result.nodes.filter(n => n.kind === 'premise');
+    const steps = result.nodes.filter(n => n.kind === 'reasoning');
+    const topCount = Math.max(semantics.length, premises.length, 4);
+    const width = Math.max(1050, topCount * 260 + 100);
+    const semanticRows = Math.ceil(semantics.length / 4);
+    const premiseStartY = 40 + semanticRows * 155;
+    const premiseRows = Math.ceil(premises.length / 4);
+    const stepStartY = 70 + semanticRows * 155 + premiseRows * 155;
+    const height = stepStartY + steps.length * 165 + 230;
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.style.height = `${Math.min(Math.max(height, 620), 1650)}px`;
+
+    const positions = {};
+    const nodeW = 230, nodeH = 118;
+    semantics.forEach((node, idx) => {
+      const perRow = Math.min(4, semantics.length || 1);
+      const row = Math.floor(idx / perRow), col = idx % perRow;
+      const gap = width / perRow;
+      positions[node.id] = {x: gap * col + gap / 2 - nodeW / 2, y: 40 + row * 155};
+    });
+    premises.forEach((node, idx) => {
+      const perRow = Math.min(4, premises.length || 1);
+      const row = Math.floor(idx / perRow), col = idx % perRow;
+      const gap = width / perRow;
+      positions[node.id] = {x: gap * col + gap / 2 - nodeW / 2, y: premiseStartY + row * 155};
+    });
+    steps.forEach((node, idx) => {
+      positions[node.id] = {x: width / 2 - nodeW / 2, y: stepStartY + idx * 165};
+    });
+    positions.final = {x: width / 2 - nodeW / 2, y: stepStartY + steps.length * 165 + 25};
+
+    let markup = `<defs>
+      <marker id="arrowSource" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#7c3aed"/></marker>
+      <marker id="arrowChain" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#526271"/></marker>
+      <marker id="arrowProof" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#0f77b5"/></marker>
+      <marker id="arrowConflict" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--contradiction)"/></marker>
+      <marker id="arrowError" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--blocked)"/></marker>
+      <marker id="arrowSemantic" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--semantic-approved)"/></marker>
+      <marker id="arrowRelated" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--semantic-advisory)"/></marker>
+    </defs>`;
+    const offsets = {source_match:-24, reasoning_dependency:-7, reasoning_conflict:7, error_propagation:22, proof_support:35, proof_conflict:35, semantic_normalization:-40, semantic_bridge:18, semantic_related:45};
+    const markers = {source_match:'arrowSource', reasoning_dependency:'arrowChain', reasoning_conflict:'arrowConflict', error_propagation:'arrowError', proof_support:'arrowProof', proof_conflict:'arrowConflict', semantic_normalization:'arrowSemantic', semantic_bridge:'arrowSemantic', semantic_related:'arrowRelated'};
+    for (const edge of result.edges) {
+      if (!edgeVisible(edge.relation)) continue;
+      const a = positions[edge.source], b = positions[edge.target];
+      if (!a || !b) continue;
+      const offset = offsets[edge.relation] || 0;
+      const x1 = a.x + nodeW / 2, y1 = a.y + nodeH;
+      const x2 = b.x + nodeW / 2, y2 = b.y;
+      const mid = (y1 + y2) / 2;
+      markup += `<path class="edge ${edge.relation}" d="M${x1},${y1} C${x1 + offset},${mid} ${x2 + offset},${mid} ${x2},${y2}" marker-end="url(#${markers[edge.relation] || 'arrowChain'})"/>`;
+    }
+    for (const node of result.nodes) {
+      const pos = positions[node.id];
+      const selected = node.id === selectedId ? ' selected' : '';
+      const title = node.kind === 'premise' ? `Premise · ${node.id}` : node.kind === 'semantic' ? `Semantic · ${node.id}` : node.kind === 'answer' ? 'Final answer' : `Reasoning · ${node.id}`;
+      const lines = wrapText(node.text);
+      const chainImpact = node.kind === 'answer' ? 'FINAL' : String(node.chain_impact_level || 'low').toUpperCase();
+      const logical = node.kind === 'answer' ? 'FINAL' : node.logical_final_changes_if_removed === true ? 'NEEDED' : node.alternative_proof_exists ? 'ALT PATH' : String(node.logical_impact_level || 'low').toUpperCase();
+      const visualStatus = node.chain_status === 'blocked_by_upstream_error' ? node.chain_status : node.proof_status;
+      markup += `<g class="node ${visualStatus}${selected}" data-id="${escapeXml(node.id)}" transform="translate(${pos.x},${pos.y})">`;
+      markup += `<rect width="${nodeW}" height="${nodeH}"/>`;
+      markup += `<text x="13" y="20" class="node-title">${escapeXml(title)} · P:${escapeXml(String(node.proof_status).toUpperCase())} · C:${escapeXml(String(node.chain_status).toUpperCase())}</text>`;
+      lines.forEach((line, idx) => markup += `<text x="13" y="${43 + idx * 16}" class="node-body">${escapeXml(line)}</text>`);
+      const origin = node.verification_origin === 'reused_prefix' ? 'REUSED' : node.verification_origin === 'full_parity_fallback' ? 'FULL FALLBACK' : 'RECHECKED';
+      markup += `<text x="13" y="106" class="node-meta">LLM ↓${node.chain_descendant_count ?? 0} · ${escapeXml(chainImpact)} · ${escapeXml(logical)} · ${escapeXml(origin)}</text>`;
+      markup += `</g>`;
+    }
+    svg.innerHTML = markup;
+    svg.querySelectorAll('.node').forEach(el => el.addEventListener('click', () => selectNode(el.dataset.id)));
+  }
+
+  function findEditableItem(id) {
+    if (!currentCase) return null;
+    if (id === 'final') return {type:'answer', object:currentCase.llm_output, key:'answer'};
+    const premise = (currentCase.premises || []).find(x => x.id === id);
+    if (premise) return {type:'premise', object:premise, key:'text'};
+    const step = (currentCase.llm_output?.reasoning_steps || []).find(x => x.id === id);
+    if (step) return {type:'reasoning', object:step, key:'text'};
+    return null;
+  }
+
+  function selectNode(id) {
+    selectedId = id;
+    const node = result?.nodes.find(n => n.id === id);
+    if (!node) return;
+    $('emptySelection').classList.add('hidden');
+    $('nodeEditor').classList.remove('hidden');
+    $('nodeProofStatus').textContent = `Proof: ${node.proof_status}`;
+    $('nodeProofStatus').style.color = statusColor(node.proof_status);
+    $('nodeChainStatus').textContent = `Chain: ${node.chain_status}`;
+    $('nodeChainStatus').style.color = statusColor(node.chain_status);
+    $('nodeText').value = node.kind === 'answer' ? result.predicted_answer : node.text;
+    $('nodeText').disabled = node.kind === 'semantic';
+    $('saveNode').disabled = node.kind === 'semantic';
+    $('resetNode').disabled = node.kind === 'semantic';
+    $('nodeRawFormal').textContent = node.raw_formal || '-';
+    $('nodeFormal').textContent = node.formal || node.parse_error || '-';
+    $('nodeSemanticType').textContent = node.semantic_relation_type || '-';
+    $('nodeSemanticUsable').textContent = node.semantic_proof_usable == null ? '-' : (node.semantic_proof_usable ? 'Yes' : 'No');
+    $('nodeSemanticNormalizations').textContent = node.semantic_normalizations?.length ? node.semantic_normalizations.join(', ') : '-';
+    $('nodeSemanticProofDeps').textContent = node.semantic_proof_dependencies?.length ? node.semantic_proof_dependencies.join(', ') : '-';
+    $('nodeSemanticHints').textContent = node.semantic_hints?.length ? node.semantic_hints.map((hint, idx) => `${idx + 1}. ${hint.message} [from: ${(hint.from_nodes || []).join(', ')}]`).join('\n') : '-';
+    $('nodeSmtFormula').textContent = node.smtlib_formula || '-';
+    $('nodeConsistencyResult').textContent = String(node.consistency_check_result || 'not_run').toUpperCase();
+    $('nodeEntailmentResult').textContent = String(node.entailment_check_result || 'not_run').toUpperCase();
+    $('nodeConsistencyQuery').textContent = node.consistency_query_smtlib || '-';
+    $('nodeEntailmentQuery').textContent = node.entailment_query_smtlib || '-';
+    $('nodeDetail').textContent = node.engine_detail || '-';
+    $('nodeChainDetail').textContent = node.chain_detail || '-';
+    $('nodeChainDirect').textContent = node.chain_direct_dependents ?? 0;
+    $('nodeChainDesc').textContent = node.chain_descendant_count ?? 0;
+    $('nodeChainFinal').textContent = node.chain_reaches_final ? 'Yes' : 'No';
+    $('nodeStrictBreak').textContent = node.strict_chain_breaks_if_removed == null ? '-' : (node.strict_chain_breaks_if_removed ? 'Yes' : 'No');
+    $('nodeStrictAffected').textContent = node.strict_chain_affected_nodes ?? '-';
+    $('nodeChainRepairable').textContent = node.chain_repairable == null ? '-' : (node.chain_repairable ? 'Yes' : 'No');
+    $('nodeProofDesc').textContent = node.proof_descendant_count ?? 0;
+    $('nodeLogicalPreserved').textContent = node.logical_answer_preserved_if_removed == null ? '-' : (node.logical_answer_preserved_if_removed ? 'Yes' : 'No');
+    $('nodeLogicalAffected').textContent = node.logical_affected_if_removed ?? '-';
+    $('nodeChainAffected').textContent = node.chain_affected_if_removed ?? '-';
+    $('nodeLogicalNecessary').textContent = node.logical_final_changes_if_removed == null ? '-' : (node.logical_final_changes_if_removed ? 'Yes' : 'No');
+    $('nodeAlternative').textContent = node.alternative_proof_exists == null ? '-' : (node.alternative_proof_exists ? 'Yes' : 'No');
+    $('nodeVerificationOrigin').textContent = node.verification_origin || 'revalidated';
+    $('nodeSourceMatches').textContent = node.source_matches?.length ? node.source_matches.join(', ') : '-';
+    $('nodeChainDependencySource').textContent = node.chain_dependency_source || 'inferred';
+    $('nodeDeclaredUsed').textContent = node.chain_dependency_source === 'declared' ? 'Yes' : 'No';
+    $('nodeDeclaredReasoningDeps').textContent = node.declared_reasoning_dependencies?.length ? node.declared_reasoning_dependencies.join(', ') : '-';
+    $('nodeInferredReasoningDeps').textContent = node.inferred_reasoning_dependencies?.length ? node.inferred_reasoning_dependencies.join(', ') : '-';
+    $('nodeReasoningDeps').textContent = node.reasoning_dependencies?.length ? node.reasoning_dependencies.join(', ') : '-';
+    $('nodeReasoningConflictDeps').textContent = node.reasoning_conflict_dependencies?.length ? node.reasoning_conflict_dependencies.join(', ') : '-';
+    const blocking = [];
+    if (node.blocking_parent_nodes?.length) blocking.push(`direct: ${node.blocking_parent_nodes.join(', ')}`);
+    if (node.upstream_error_nodes?.length) blocking.push(`root: ${node.upstream_error_nodes.join(', ')}`);
+    $('nodeBlocking').textContent = blocking.length ? blocking.join('\n') : '-';
+    $('nodeProofRawDeps').textContent = node.proof_dependencies_raw?.length ? node.proof_dependencies_raw.join(', ') : '-';
+    $('nodeProofDeps').textContent = node.proof_dependencies?.length ? node.proof_dependencies.join(', ') : '-';
+    $('nodeCoreMinimized').textContent = node.proof_core_minimized ? 'Yes' : 'No';
+    $('nodeAlternativePaths').textContent = node.alternative_proof_paths?.length
+      ? node.alternative_proof_paths.map((path, idx) => `${idx + 1}. ${path.join(' + ')}`).join('\n')
+      : '-';
+    const diff = result?.edit_diff;
+    if (diff) {
+      const lines = [];
+      if (diff.text_changes?.length) lines.push('문장 변경: ' + diff.text_changes.map(x => x.node_id).join(', '));
+      if (diff.status_changes?.length) lines.push('상태 변경: ' + diff.status_changes.map(x => `${x.node_id} (${x.proof_before||x.before}→${x.proof_after||x.after}, ${x.chain_before||''}→${x.chain_after||''})`).join('; '));
+      if (diff.dependency_changes?.length) lines.push('근거/연결 변경: ' + diff.dependency_changes.map(x => x.node_id).join(', '));
+      if (diff.new_root_error_nodes?.length) lines.push('새 근본 오류: ' + diff.new_root_error_nodes.join(', '));
+      lines.push(`Final: P ${diff.final_before?.proof||'-'}→${diff.final_after?.proof||'-'}, C ${diff.final_before?.chain||'-'}→${diff.final_after?.chain||'-'}`);
+      $('editDiff').textContent = lines.join('\n') || '-';
+    } else $('editDiff').textContent = '-';
+    $('solverStats').textContent = result?.incremental?.solver_stats ? JSON.stringify(result.incremental.solver_stats, null, 2) : (result?.verification?.solver_stats ? JSON.stringify(result.verification.solver_stats, null, 2) : '-');
+    $('mImpact').textContent = `${node.id}: strict break ${node.strict_chain_breaks_if_removed ? 'yes' : 'no'} / repair ${node.chain_repairable ? 'yes' : 'no'}`;
+    renderGraph();
+  }
+
+  function updateMetrics() {
+    $('mEngine').textContent = result?.engine || '-';
+    $('mFinalProof').textContent = result?.summary?.final_proof_status || '-';
+    $('mFinalChain').textContent = result?.summary?.final_chain_status || '-';
+    $('mAnswer').textContent = result ? `${result.gold_answer} / ${result.predicted_answer}` : '-';
+    $('mInvalid').textContent = result ? `${result.summary.invalid_reasoning_count ?? 0} / ${result.summary.blocked_reasoning_count ?? 0}` : '-';
+    const inc = result?.incremental;
+    $('mMode').textContent = inc?.mode || 'full';
+    $('mReuse').textContent = inc ? `${inc.reused_reasoning_count} / ${inc.revalidated_reasoning_count} (${inc.reuse_percent}%)` : '-';
+    const parity = inc?.parity_validation;
+    $('mParity').textContent = !parity?.checked ? '-' : (parity.matches_full_verification ? 'MATCH' : 'MISMATCH');
+    $('mScope').textContent = inc?.scope_reduction_percent == null ? '-' : `${inc.scope_reduction_percent}%`;
+    $('mSpeed').textContent = parity?.speedup_ratio == null ? '-' : `${parity.speedup_ratio}×`;
+    $('caseJson').value = JSON.stringify(currentCase, null, 2);
+  }
+
+  async function verify() {
+    $('apiError').textContent = '';
+    try {
+      const response = await fetch('/api/verify', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({case:currentCase, prefer_z3:true, compute_counterfactuals:true})
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || 'Verification failed');
+      result = payload;
+      lastVerifiedCase = structuredClone(currentCase);
+      updateMetrics();
+      renderGraph();
+      if (selectedId && result.nodes.some(n => n.id === selectedId)) selectNode(selectedId);
+    } catch (error) {
+      $('apiError').textContent = error.message;
+    }
+  }
+
+  async function incrementalVerify(previousCase) {
+    $('apiError').textContent = '';
+    try {
+      if (!result || !previousCase) return verify();
+      const response = await fetch('/api/incremental-verify', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          previous_case:previousCase,
+          updated_case:currentCase,
+          previous_result:result,
+          prefer_z3:true,
+          validate_against_full:$('validateParity').checked
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || 'Incremental verification failed');
+      result = payload;
+      lastVerifiedCase = structuredClone(currentCase);
+      updateMetrics();
+      renderGraph();
+      if (selectedId && result.nodes.some(n => n.id === selectedId)) selectNode(selectedId);
+    } catch (error) {
+      $('apiError').textContent = error.message;
+    }
+  }
+
+  async function init() {
+    const response = await fetch('/api/samples');
+    samples = await response.json();
+    const select = $('sampleSelect');
+    Object.keys(samples).forEach(name => {
+      const option = document.createElement('option'); option.value = name; option.textContent = name; select.appendChild(option);
+    });
+    const first = Object.keys(samples)[0];
+    if (first) { select.value = 'sample_valid' in samples ? 'sample_valid' : first; loadSelectedSample(); }
+  }
+
+  function loadSelectedSample() {
+    currentCase = structuredClone(samples[$('sampleSelect').value]);
+    originals = new Map();
+    for (const item of currentCase.premises || []) originals.set(item.id, item.text);
+    for (const item of currentCase.llm_output?.reasoning_steps || []) originals.set(item.id, item.text);
+    originals.set('final', currentCase.llm_output?.answer);
+    selectedId = null;
+    $('nodeEditor').classList.add('hidden');
+    $('emptySelection').classList.remove('hidden');
+    verify();
+  }
+
+  $('loadSample').addEventListener('click', loadSelectedSample);
+  $('verifyButton').addEventListener('click', verify);
+  $('saveNode').addEventListener('click', async () => {
+    const editable = findEditableItem(selectedId);
+    if (!editable) return;
+    const previousCase = structuredClone(lastVerifiedCase || currentCase);
+    editable.object[editable.key] = $('nodeText').value.trim();
+    await incrementalVerify(previousCase);
+  });
+  $('resetNode').addEventListener('click', async () => {
+    const editable = findEditableItem(selectedId);
+    if (!editable || !originals.has(selectedId)) return;
+    const previousCase = structuredClone(lastVerifiedCase || currentCase);
+    editable.object[editable.key] = originals.get(selectedId);
+    await incrementalVerify(previousCase);
+  });
+  $('applyJson').addEventListener('click', async () => {
+    $('jsonError').textContent = '';
+    try { currentCase = JSON.parse($('caseJson').value); selectedId = null; await verify(); }
+    catch (error) { $('jsonError').textContent = error.message; }
+  });
+  $('downloadButton').addEventListener('click', () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${result.case_id || 'result'}_verified_graph.json`; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $('auditButton').addEventListener('click', async () => {
+    if (!result || !currentCase) return;
+    $('apiError').textContent = '';
+    try {
+      const response = await fetch('/api/audit-package', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({case:currentCase, result})
+      });
+      if (!response.ok) { const body = await response.json().catch(()=>({})); throw new Error(body.detail || `HTTP ${response.status}`); }
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      const filename = match ? match[1] : `${result.case_id || 'case'}_audit_package.zip`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) { $('apiError').textContent = error.message; }
+  });
+
+  document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    button.classList.add('active');
+    ['graphTab','jsonTab'].forEach(id => $(id).classList.toggle('hidden', id !== button.dataset.tab));
+  }));
+  ['showSource','showChain','showErrors','showProof','showSemantic'].forEach(id => $(id).addEventListener('change', renderGraph));
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "id": "semantic_same_as",
+  "premises": [
+    {"id": "p1", "text": "The mouse consumes the apple."}
+  ],
+  "question": "Does the mouse eat the apple?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "The mouse eats the apple."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "Yes",
+  "semantic_relations": [
+    {
+      "id": "m1",
+      "type": "same_as",
+      "predicates": ["eat", "consume", "ingest"],
+      "canonical": "eat",
+      "arity": 2,
+      "approved": true,
+      "description": "Approved dataset-level synonym normalization."
+    }
+  ]
+}

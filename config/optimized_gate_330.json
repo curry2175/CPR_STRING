@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.50.0-alignment-threshold-optimizer",
+  "created_at": "2026-08-02T04:26:22+09:00",
+  "source_cases_jsonl": "results/ragtruth_qa_330_cases.jsonl",
+  "completed_cases": 330,
+  "fitted_on_same_cases": true,
+  "recommended_alignment_prompt_profile": "v046_cached",
+  "alignment_prompt_version_observed": "v046-conservative-alignment",
+  "gate_config": {
+    "thresholds": {
+      "contradicted_by": 0.99,
+      "partially_supported_by": 0.84,
+      "qualified_by": 0.89,
+      "not_found_in_source": 0.42,
+      "requires_assumption": 0.66
+    },
+    "infer_error_label": false,
+    "partial_span_mode": "core"
+  },
+  "metrics_on_fitted_cases": {
+    "char_f1_percent": 47.59,
+    "clean_n": 263,
+    "clean_false_positive_n": 20,
+    "clean_false_positive_rate_percent": 7.6,
+    "hallucinated_n": 67,
+    "hallucinated_detected_n": 44,
+    "hallucinated_sensitivity_percent": 65.67,
+    "response_accuracy_percent": 86.97,
+    "strict_rescue": 0
+  }
+}

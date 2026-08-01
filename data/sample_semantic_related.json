@@ -1,0 +1,26 @@
+{
+  "id": "semantic_related_only",
+  "premises": [
+    {"id": "p1", "text": "The mouse eats the apple."},
+    {"id": "p2", "text": "The mouse does not digest the apple."}
+  ],
+  "question": "Does the mouse digest the apple?",
+  "llm_output": {
+    "reasoning_steps": [
+      {"id": "s1", "text": "The mouse digests the apple."}
+    ],
+    "answer": "Yes"
+  },
+  "gold_answer": "No",
+  "semantic_relations": [
+    {
+      "id": "m1",
+      "type": "related_to",
+      "source": "eat",
+      "target": "digest",
+      "arity": 2,
+      "approved": false,
+      "description": "Eating and digestion are related events, but one does not strictly entail the other. The explicit negative premise determines this case."
+    }
+  ]
+}
